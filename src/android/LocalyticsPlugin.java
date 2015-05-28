@@ -42,6 +42,16 @@ public class LocalyticsPlugin extends CordovaPlugin {
             String key = args.getString(0);
             if (key != null && key.length() > 0) {
                 this.localyticsSession = new LocalyticsAmpSession(cordova.getActivity().getApplicationContext(), key);
+
+                ApplicationInfo ai = _context.getPackageManager()
+                                             .getApplicationInfo(_context.getPackageName(),PackageManager.GET_META_DATA);
+                String gcmKey = ai.metaData.get("GCM_KEY");
+
+                this.localyticsSession.registerPush(gcmKey);
+                this.localyticsSession.open();
+                this.localyticsSession.handlePushReceived(getIntent());
+                this.localyticsSession.upload();
+
                 callbackContext.success();
             } else {
                 callbackContext.error("Expected non-empty key argument.");
@@ -49,7 +59,9 @@ public class LocalyticsPlugin extends CordovaPlugin {
             return true;
         }
         else if (action.equals("resume")) {
-            this.localyticsSession.open();
+          this.localyticsSession.open();
+          this.localyticsSession.handlePushReceived(getIntent());
+          this.localyticsSession.upload();
             callbackContext.success();
             return true;
         }
@@ -57,6 +69,12 @@ public class LocalyticsPlugin extends CordovaPlugin {
             this.localyticsSession.close();
             callbackContext.success();
             return true;
+        }
+        else if (action.equals("pause")) {
+          this.localyticsSession.close();
+          this.localyticsSession.upload();
+          callbackContext.success();
+          return true;
         }
         else if (action.equals("upload")) {
             this.localyticsSession.upload();
